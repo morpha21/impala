@@ -4,7 +4,7 @@ It currently has an implementation of the Floyd-Steinberg Dithering algorithm, w
 
 # Usage: 
 
-Currently, it nees two arguments: the command, which can be either "dither", "blur" or "gray"; and the image path. 
+Currently, it needs two arguments: the command, which can be either "dither", "blur" or "gray"; and the image path. 
 
 For example, if you have an image /home/me/Pictures/MyPicture.png and wants to do the dithering, you need to: 
 
