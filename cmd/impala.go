@@ -45,6 +45,6 @@ func main() {
 
 	//////////////////////////////////////// saves the processed image
 	fmt.Println("saving image...")
-	imp.SaveImage(&new_img, "neW_image.png")
+	imp.SaveImage(&new_img, command+"_image.png")
 	fmt.Println("\ndone.")
 }
