@@ -9,7 +9,7 @@ import (
 func ErrorDiffusionDithering(img *image.Image) *image.RGBA {
 	dither, x_max, y_max := copyImage(*img)
 
-	/////////////////////////////////////////////  we calculate the mean color of the image
+	/////////////////////////////////////////////  calculates the mean light color of the image
 	/////////////////////////////////////////////  to be used to do the dither
 	cnt := 0
 	sumR, sumG, sumB := 0, 0, 0
@@ -17,7 +17,7 @@ func ErrorDiffusionDithering(img *image.Image) *image.RGBA {
 		for x := 0; x < x_max; x++ {
 			col := color.RGBAModel.Convert(dither.At(x, y)).(color.RGBA)
 
-			if GrayscalePixel(col) >= 128 {
+			if GrayscalePixel(col) >= 128 { // decides which pixels will be considered in the mean color
 				sumR += int(col.R)
 				sumG += int(col.G)
 				sumB += int(col.B)
@@ -29,7 +29,7 @@ func ErrorDiffusionDithering(img *image.Image) *image.RGBA {
 	////////////////////////////////////////////////////////////////////////////////////////// defines the color to be used
 	dither_color := color.RGBA{uint8(sumR / cnt), uint8(sumG / cnt), uint8(sumB / cnt), 255}
 
-	/////////////////////////////////////////////  we do the error diffusion dithering
+	/////////////////////////////////////////////  does the error diffusion dithering
 	for y := 0; y < y_max; y++ {
 		for x := 0; x < x_max; x++ {
 
@@ -89,12 +89,12 @@ func pixelDecide(pixel color.RGBA, dither_color *(color.RGBA)) color.RGBA {
 	if GrayscalePixel(pixel) >= 128 {
 		return *dither_color
 	} else {
-		return color.RGBA{0, 0, 0, 255} // change this color for unexpected results
+		return color.RGBA{0, 0, 0, 255} // change this color to see different results
 	}
 }
 
-////////////////////////////////////////////////////////////// TODO: kernel convolution blur
-func KCblur(img *image.Image) *image.RGBA {
+////////////////////////////////////////////////////////////// does the
+func GaussianBlur(img *image.Image) *image.RGBA {
 	blurred := image.NewRGBA((*img).Bounds())
 	x_max := blurred.Bounds().Max.X
 	y_max := blurred.Bounds().Max.Y
@@ -110,16 +110,17 @@ func KCblur(img *image.Image) *image.RGBA {
 	return blurred
 }
 
+// does the kernel convolution over a given pixel (x, y) of an image
 func kernelConvolutedPixel(img *image.Image, x, y int) color.Color {
-	var kernel [3][3]int
-	kernel[0][0], kernel[0][2], kernel[2][0], kernel[2][2] = 1, 1, 1, 1
-	kernel[0][1], kernel[1][0], kernel[1][2], kernel[2][1] = 2, 2, 2, 2
-	kernel[1][1] = 4
+	var blur_kernel [3][3]int
+	blur_kernel[0][0], blur_kernel[0][2], blur_kernel[2][0], blur_kernel[2][2] = 1, 1, 1, 1
+	blur_kernel[0][1], blur_kernel[1][0], blur_kernel[1][2], blur_kernel[2][1] = 2, 2, 2, 2
+	blur_kernel[1][1] = 4
 
 	kernelSum := 0
 
 	for i := 0; i < 9; i++ {
-		kernelSum += kernel[i/3][i%3]
+		kernelSum += blur_kernel[i/3][i%3]
 	}
 	SumR, SumG, SumB := 0, 0, 0
 
@@ -127,9 +128,9 @@ func kernelConvolutedPixel(img *image.Image, x, y int) color.Color {
 		for i := 0; i <= 2; i++ {
 			col := color.RGBAModel.Convert((*img).At(x-1+i, y-1+j)).(color.RGBA)
 
-			SumR += kernel[i][j] * int(col.R)
-			SumG += kernel[i][j] * int(col.G)
-			SumB += kernel[i][j] * int(col.B)
+			SumR += blur_kernel[i][j] * int(col.R)
+			SumG += blur_kernel[i][j] * int(col.G)
+			SumB += blur_kernel[i][j] * int(col.B)
 		}
 	}
 
