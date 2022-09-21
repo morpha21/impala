@@ -38,6 +38,9 @@ func main() {
 	} else if command == "blur" {
 		fmt.Println("blurring image...")
 		new_img = imp.GaussianBlur(&img)
+	} else if command == "sharpen" {
+		fmt.Println("sharpening image...")
+		new_img = imp.Sharpen(&img)
 	} else {
 		fmt.Println("failed to do anything.")
 		return
@@ -46,5 +49,6 @@ func main() {
 	//////////////////////////////////////// saves the processed image
 	fmt.Println("saving image...")
 	imp.SaveImage(&new_img, command+"_image.png")
-	fmt.Println("\ndone.")
+	fmt.Println("done.")
+	fmt.Println()
 }

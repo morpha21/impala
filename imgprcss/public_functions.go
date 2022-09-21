@@ -6,6 +6,8 @@ import (
 	_ "image/jpeg"
 )
 
+const threads = 4
+
 func ErrorDiffusionDithering(img *image.Image) *image.RGBA {
 	dither, x_max, y_max := copyImage(*img)
 
@@ -70,19 +72,78 @@ func GrayscalePixel(c color.Color) uint8 {
 	return uint8((float32(r) + float32(g) + float32(b)) / 3)
 }
 
-////////////////////////////////////////////////////////////// does the
+////////////////////////////////////////////////////////////// blurs the image
 func GaussianBlur(img *image.Image) *image.RGBA {
 	blurred := image.NewRGBA((*img).Bounds())
 	x_max := blurred.Bounds().Max.X
 	y_max := blurred.Bounds().Max.Y
 
-	for y := 0; y < y_max; y++ {
-		for x := 0; x < x_max; x++ {
-			for i := 0; i < 9; i++ {
-				blurred.Set(x, y, kernelConvolutedPixel(img, x, y))
-			}
+	//////////////////////////////////////// defines the kernel that will be convoluted
+	const corner float32 = 1. / 16
+	const middle float32 = 2. / 16
+	const center float32 = 4. / 16
 
-		}
+	var kernel = [3][3]float32{{corner, middle, corner},
+		{middle, center, middle},
+		{corner, middle, corner}}
+
+	//////////////////////////////////////// does the convolution over all the pixels
+	channel := make(chan bool, threads)
+
+	for i := 0; i < threads; i++ {
+		a := i
+		go func() {
+			for y := a; y < y_max; y += threads {
+				for x := 0; x < x_max; x++ {
+					for j := 0; j < 9; j++ {
+						R, G, B := kernelConvolution(img, x, y, &kernel)
+						blurred.Set(x, y, color.RGBA{R, G, B, 255})
+					}
+				}
+			}
+			channel <- true
+		}()
 	}
+
+	<-channel
 	return blurred
+}
+
+////////////////////////////////////////////////////////////// sharpens the image
+func Sharpen(img *image.Image) *image.RGBA {
+	sharpened := image.NewRGBA((*img).Bounds())
+	x_max := sharpened.Bounds().Max.X
+	y_max := sharpened.Bounds().Max.Y
+
+	//////////////////////////////////////// defines the kernel that will be convoluted
+	const corner float32 = 0
+	const middle float32 = -1
+	const center float32 = 5
+
+	var kernel = [3][3]float32{{corner, middle, corner},
+		{middle, center, middle},
+		{corner, middle, corner}}
+
+	//////////////////////////////////////// does the convolution over all the pixels
+
+	channel := make(chan bool, threads)
+
+	for i := 0; i < threads; i++ {
+		a := i
+		go func() {
+			for y := a; y < y_max; y += threads {
+				for x := 0; x < x_max; x++ {
+					for j := 0; j < 9; j++ {
+						R, G, B := kernelConvolution(img, x, y, &kernel)
+						sharpened.Set(x, y, color.RGBA{R, G, B, 255})
+					}
+				}
+			}
+			channel <- true
+		}()
+	}
+
+	<-channel
+
+	return sharpened
 }

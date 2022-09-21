@@ -28,34 +28,37 @@ func pixelDecide(pixel color.RGBA, dither_color *(color.RGBA)) color.RGBA {
 	}
 }
 
-// does the kernel convolution over a given pixel (x, y) of an image
-func kernelConvolutedPixel(img *image.Image, x, y int) color.Color {
-	var blur_kernel [3][3]int
-	blur_kernel[0][0], blur_kernel[0][2], blur_kernel[2][0], blur_kernel[2][2] = 1, 1, 1, 1
-	blur_kernel[0][1], blur_kernel[1][0], blur_kernel[1][2], blur_kernel[2][1] = 2, 2, 2, 2
-	blur_kernel[1][1] = 4
+////////////////////////////////////////////////////////////// does the kernel convolution over a given pixel (x, y) of an image
+func kernelConvolution(img *image.Image, x, y int, kernel *[3][3]float32) (uint8, uint8, uint8) {
 
-	kernelSum := 0
-
-	for i := 0; i < 9; i++ {
-		kernelSum += blur_kernel[i/3][i%3]
-	}
-	SumR, SumG, SumB := 0, 0, 0
+	var SumR, SumG, SumB float32 = 0, 0, 0
 
 	for j := 0; j <= 2; j++ {
 		for i := 0; i <= 2; i++ {
 			col := color.RGBAModel.Convert((*img).At(x-1+i, y-1+j)).(color.RGBA)
 
-			SumR += blur_kernel[i][j] * int(col.R)
-			SumG += blur_kernel[i][j] * int(col.G)
-			SumB += blur_kernel[i][j] * int(col.B)
+			SumR += (*kernel)[i][j] * float32(col.R)
+			SumG += (*kernel)[i][j] * float32(col.G)
+			SumB += (*kernel)[i][j] * float32(col.B)
 		}
 	}
 
-	R := uint8(float32(SumR) / float32(kernelSum))
-	G := uint8(float32(SumG) / float32(kernelSum))
-	B := uint8(float32(SumB) / float32(kernelSum))
+	if SumR < 0 {
+		SumR = 0
+	} else if SumR > 255 {
+		SumR = 255
+	}
 
-	new_pixel := color.RGBA{R, G, B, 255}
-	return new_pixel
+	if SumG < 0 {
+		SumG = 0
+	} else if SumG > 255 {
+		SumG = 255
+	}
+
+	if SumB < 0 {
+		SumB = 0
+	} else if SumB > 255 {
+		SumB = 255
+	}
+	return uint8(SumR), uint8(SumG), uint8(SumB)
 }
